@@ -61,7 +61,7 @@ export const fetchVideoUrl2 = async (url: string): Promise<string | null> => {
 };
 
 export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
   let m3u8Url: string | null = null;
 
