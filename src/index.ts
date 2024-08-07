@@ -18,7 +18,8 @@ import fs from "fs";
 import path from "path";
 import ytdl from "@distube/ytdl-core";
 import yts from "play-dl";
-import { getM3U8FromCuevana } from "./cuevana";
+import { getM3U8FromCuevana } from "./cuevana-serie";
+import { getM3U8FromCuevana2 } from "./cuevana-peli";
 
 const streamer = new Streamer(new Client());
 
@@ -247,6 +248,48 @@ streamer.client.on("messageCreate", async (message) => {
           message.reply(`**An error occurred: ${error.message}**`);
         }
         break;
+      case "cuevanapeli":
+        console.log("cuevana")
+        if (streamStatus.joined) {
+          message.reply("**Already joined**");
+          return;
+        }
+
+        let cuevanaUrl2 = args.shift() || "";
+
+        if (!cuevanaUrl2) {
+          message.reply("**Please provide a Cuevana URL.**");
+          return;
+        }
+
+        message.reply("**Fetching video data...**");
+
+        try {
+          const m3u8Url2 = await getM3U8FromCuevana2(cuevanaUrl2);
+
+          await streamer.joinVoice(guildId, channelId, streamOpts);
+
+          streamStatus.joined = true;
+          streamStatus.playing = true;
+          streamStatus.channelInfo = {
+            guildId: guildId,
+            channelId: channelId,
+            cmdChannelId: message.channel.id,
+          };
+
+          const streamLinkUdpConn = await streamer.createStream(streamOpts);
+
+          playVideo(m3u8Url2, streamLinkUdpConn);
+          message.reply("**Playing video from Cuevana...**");
+          console.log("Playing video from Cuevana...");
+          streamer.client.user?.setActivity(
+            status_watch("Cuevana Video") as ActivityOptions
+          );
+        } catch (error: any) {
+          console.error("Error processing Cuevana URL:", error);
+          message.reply(`**An error occurred: ${error.message}**`);
+        }
+        break;  
       case "ytplay":
         if (streamStatus.joined) {
           message.reply("**Already joined**");
