@@ -20,6 +20,7 @@ import ytdl from "@distube/ytdl-core";
 import yts from "play-dl";
 import { getM3U8FromCuevana } from "./cuevana-serie";
 import { getM3U8FromCuevana2 } from "./cuevana-peli";
+import axios from "axios";
 
 const streamer = new Streamer(new Client());
 
@@ -573,33 +574,70 @@ async function cleanupStreamStatus() {
   };
 }
 
-async function getVideoUrl(videoUrl: string) {
-  const video = await ytdl.getInfo(videoUrl);
-  const videoDetails = video.videoDetails;
-  if (videoDetails.isLiveContent) {
-    // check if the video url is livestream
-    const tsFormats = video.formats.filter(
-      (format) => format.container === "ts"
-    );
-    const highestTsFormat = tsFormats.reduce((prev: any, current: any) => {
-      if (!prev || current.bitrate > prev.bitrate) {
-        return current;
+// async function getVideoUrl(videoUrl: string) {
+//   const video = await ytdl.getInfo(videoUrl);
+//   const videoDetails = video.videoDetails;
+//   if (videoDetails.isLiveContent) {
+//     // check if the video url is livestream
+//     const tsFormats = video.formats.filter(
+//       (format) => format.container === "ts"
+//     );
+//     const highestTsFormat = tsFormats.reduce((prev: any, current: any) => {
+//       if (!prev || current.bitrate > prev.bitrate) {
+//         return current;
+//       }
+//       return prev;
+//     });
+
+//     if (highestTsFormat) {
+//       return highestTsFormat.url;
+//     }
+//   } else {
+//     const videoFormats = video.formats
+//       .filter(
+//         (format: { hasVideo: any; hasAudio: any }) =>
+//           format.hasVideo && format.hasAudio
+//       )
+//       .filter((format) => format.container === "mp4");
+
+//     return videoFormats[0].url;
+//   }
+// }
+
+async function getVideoUrl(videoUrl: string): Promise<string> {
+  try {
+    // Intenta primero con ytdl
+    const info = await ytdl.getInfo(videoUrl);
+    const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
+    return format.url;
+  } catch (ytdlError : any) {
+    console.error("Error with ytdl:", ytdlError.message);
+    
+    // Si ytdl falla, intenta con una solicitud directa
+    try {
+      const response = await axios.get(`https://www.youtube.com/get_video_info?video_id=${ytdl.getVideoID(videoUrl)}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+      
+      const videoDetails = JSON.parse(decodeURIComponent(response.data.split('player_response=')[1].split('&')[0]));
+      const streamingData = videoDetails.streamingData;
+      
+      if (streamingData && streamingData.formats) {
+        // Encuentra el formato con la mejor calidad de audio
+        const bestFormat = streamingData.formats.reduce((prev, current) => 
+          (prev.bitrate > current.bitrate) ? prev : current
+        );
+        
+        return bestFormat.url;
       }
-      return prev;
-    });
-
-    if (highestTsFormat) {
-      return highestTsFormat.url;
+      
+      throw new Error("No se encontró un formato de streaming adecuado");
+    } catch (directError : any) {
+      console.error("Error with direct request:", directError.message);
+      throw new Error("No se pudo obtener la URL del video");
     }
-  } else {
-    const videoFormats = video.formats
-      .filter(
-        (format: { hasVideo: any; hasAudio: any }) =>
-          format.hasVideo && format.hasAudio
-      )
-      .filter((format) => format.container === "mp4");
-
-    return videoFormats[0].url;
   }
 }
 
@@ -641,6 +679,7 @@ async function ytSearch(title: string): Promise<string[]> {
   } catch (error) {
     console.log("No videos found with the given title.");
     return [];
+    
   }
 }
 
