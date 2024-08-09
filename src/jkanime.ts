@@ -92,7 +92,7 @@ export const getM3U8FromJkanime = async (url: string): Promise<string> => {
     console.log("Page content length:", pageContent.length);
 
     // Esperar un poco más por si hay cargas dinámicas adicionales
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
   } catch (error) {
     console.error(`Error navigating to ${url}:`, (error as Error).message);
   } finally {
