@@ -110,11 +110,3 @@ export const getM3U8FromJkanime = async (url: string): Promise<string> => {
   return m3u8Url;
 };
 
-async function main() {
-  const url = "https://jkanime.net/vinland-saga/1/";
-  console.log("Starting scraping process for URL:", url);
-  const m3u8 = await getM3U8FromJkanime(url);
-  console.log("Extracted m3u8 URL:", m3u8);
-}
-
-main();
