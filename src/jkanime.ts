@@ -51,6 +51,9 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 puppeteer.use(StealthPlugin());
 
 export const getM3U8FromJkanime = async (url: string): Promise<string> => {
+  const proxyURL = 'gw.dataimpulse.com:823';
+  const username = '661e9d1fda89d1e94039';
+  const password = 'ed8934de4aebeb2c';
   const browser = await puppeteer.launch({
     headless: true,
     args: [
@@ -60,10 +63,15 @@ export const getM3U8FromJkanime = async (url: string): Promise<string> => {
       '--disable-dev-shm-usage',
       '--ignore-certificate-errors',
       '--ignore-certificate-errors-spki-list',
+      `--proxy-server=${proxyURL}`,
     ],
   });
 
   const page = await browser.newPage();
+  await page.authenticate({
+    username,
+    password,
+  });
   await page.setViewport({
     width: 1920,
     height: 1080,
