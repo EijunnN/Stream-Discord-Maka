@@ -1,12 +1,20 @@
 // import puppeter from "puppeteer";
 
 // export const getM3U8FromJkanime = async (url: string): Promise<string> => {
+//   const proxyURL = 'gw.dataimpulse.com:823';
+//   const username = '661e9d1fda89d1e94039';
+//   const password = 'ed8934de4aebeb2c';
 //   const browser = await puppeter.launch({
 //     headless: true,
-//     args: ["--no-sandbox", "--disable-setuid-sandbox"],
+//     args: ["--no-sandbox", "--disable-setuid-sandbox", `--proxy-server=${proxyURL}`,]
+//     ,
 //   });
 //   console.log("Creating new page...");
 //   const page = await browser.newPage();
+// await page.authenticate({
+//   username,
+//   password,
+// });
 //   console.log("New page created");
 //   let m3u8Url: string = "";
 
