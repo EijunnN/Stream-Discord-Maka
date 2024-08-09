@@ -207,7 +207,7 @@ streamer.client.on("messageCreate", async (message) => {
             );
         }
 
-        break;
+        // break;
       case "cuevanaserie":
         console.log("cuevana")
         if (streamStatus.joined) {
