@@ -333,6 +333,7 @@ streamer.client.on("messageCreate", async (message) => {
           console.error("Error processing Jkanime URL:", error);
           message.reply(`**An error occurred: ${error.message}**`);
         }
+        break;
       case "ytplay":
         if (streamStatus.joined) {
           message.reply("**Already joined**");
