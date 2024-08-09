@@ -45,7 +45,10 @@
 // main();
 
 
-import puppeteer from "puppeteer";
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+
+puppeteer.use(StealthPlugin());
 
 export const getM3U8FromJkanime = async (url: string): Promise<string> => {
   const browser = await puppeteer.launch({
@@ -61,7 +64,10 @@ export const getM3U8FromJkanime = async (url: string): Promise<string> => {
   });
 
   const page = await browser.newPage();
-  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+  await page.setViewport({
+    width: 1920,
+    height: 1080,
+  });
 
   let m3u8Url: string = '';
 
@@ -80,9 +86,6 @@ export const getM3U8FromJkanime = async (url: string): Promise<string> => {
     console.log("Navigation complete");
     
     
-
-    // // Esperar a que se cargue el contenido dinámico
-    // await page.waitForSelector('#player', { timeout: 30000 }).catch(() => console.log('Player selector not found'));
 
     // Extraer contenido de la página si es necesario
     const pageContent = await page.content();
