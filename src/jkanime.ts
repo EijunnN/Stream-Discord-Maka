@@ -12,6 +12,7 @@ export const getM3U8FromJkanime = async (url: string): Promise <string> => {
   page.on("request", (request) => {
     if (request.url().includes(".m3u8")) {
       m3u8Url = request.url();
+      console.log(`Found m3u8 URL: ${m3u8Url}`);
     }
     request.continue();
   });
