@@ -33,6 +33,7 @@ export const getM3U8FromJkanime = async (url: string): Promise <string> => {
 
 async function main() {
   const url = "https://jkanime.net/vinland-saga/1/";
+  console.log(url)
   const m3u8 = await getM3U8FromJkanime(url);
   console.log(m3u8);
 }
