@@ -22,6 +22,8 @@ export const getM3U8FromJkanime = async (url: string): Promise<string> => {
   try {
     console.log(`Navigating to ${url}...`);
     await page.goto(url, { waitUntil: "networkidle0" });
+    let content = await page.content();
+    console.log(content,"xd");
     console.log("Navigation complete");
     await new Promise((resolve) => setTimeout(resolve, 10000));
   } catch (error) {
