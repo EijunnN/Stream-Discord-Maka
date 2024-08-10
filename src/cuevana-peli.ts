@@ -1,4 +1,4 @@
-import cheerio from "cheerio";
+import cheerio, { load } from "cheerio";
 import puppeteer from "puppeteer";
 import axios from "axios";
 
@@ -23,7 +23,8 @@ export const fetchDataMovie = async (
   try {
     const response = await fetch(url);
     const html = await response.text();
-    const $ = cheerio.load(html);
+    // const $ = cheerio.load(html);
+    const $ = load(html);
 
     const script = $("#__NEXT_DATA__");
     if (script.length) {
@@ -44,7 +45,8 @@ export const fetchVideoUrl2 = async (url: string): Promise<string | null> => {
   try {
     const response = await fetch(url);
     const html = await response.text();
-    const $ = cheerio.load(html);
+    // const $ = cheerio.load(html);
+    const $ = load(html);
     const script = $("script")
       .filter((i, el) => $(el).html()?.includes("var url =") ?? false)
       .first();
