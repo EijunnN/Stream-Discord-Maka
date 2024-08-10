@@ -279,7 +279,7 @@ async function verifyM3U8(url: string): Promise<boolean> {
     const response = await axios.get(url);
     const content = response.data;
 
-    if (!content.trim().startsWith('#EXTM3U')) {
+    if (!content.trim().startsWith('#EXTM3U') || !content.trim().includes('#EXT-X-STREAM-INF')) {
       return false;
     }
 
