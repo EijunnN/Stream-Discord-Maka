@@ -290,14 +290,32 @@ async function verifyM3U8(url: string): Promise<boolean> {
   }
 }
 
+async function fetchDirectFilemoonUrl(url: string): Promise<string | null> {
+  try {
+    const response = await axios.get(url);
+    const html = response.data;
+    const match = html.match(/var url = '(.+?)';/);
+    return match ? match[1] : null;
+  } catch (error) {
+    console.error(`Error obteniendo URL directa de Filemoon:`, (error as Error).message);
+    return null;
+  }
+}
+
 async function tryFetchM3U8(lang: string, cyberlocker: string, videoUrl: string): Promise<string | null> {
   try {
-    if (cyberlocker === "filemoon" && videoUrl.includes(".m3u8")) {
-      console.log(`URL m3u8 directa encontrada para ${lang} - ${cyberlocker}: ${videoUrl}`);
-      if (await verifyM3U8(videoUrl)) {
-        return videoUrl;
-      } else {
-        console.log(`URL m3u8 directa inválida para ${lang} - ${cyberlocker}`);
+    console.log(`Procesando ${lang} - ${cyberlocker}: ${videoUrl}`);
+
+    if (cyberlocker === "filemoon") {
+      console.log(`Detectado Filemoon, intentando obtener URL directamente`);
+      const directUrl = await fetchDirectFilemoonUrl(videoUrl);
+      if (directUrl) {
+        console.log(`URL directa de Filemoon obtenida: ${directUrl}`);
+        if (await verifyM3U8(directUrl)) {
+          return directUrl;
+        } else {
+          console.log(`URL directa de Filemoon no es un m3u8 válido`);
+        }
       }
     }
 
@@ -306,6 +324,8 @@ async function tryFetchM3U8(lang: string, cyberlocker: string, videoUrl: string)
       console.log(`No se encontró URL de video embebido para ${lang} - ${cyberlocker}`);
       return null;
     }
+
+    console.log(`URL embebida encontrada: ${embeddedVideoUrl}`);
 
     const m3u8Url = await fetchM3U8Url2(embeddedVideoUrl);
     if (m3u8Url) {
@@ -327,10 +347,11 @@ async function tryFetchM3U8(lang: string, cyberlocker: string, videoUrl: string)
 
 export const getM3U8FromCuevana2 = async (url: string): Promise<string> => {
   const movie = await fetchDataMovie(url);
-  console.log(movie?.thisMovie?.videos,"xd")
   if (!movie) {
     throw new Error("No se encontraron datos de video");
   }
+
+  console.log("Datos de video encontrados:", JSON.stringify(movie.thisMovie?.videos, null, 2));
 
   const videos = movie.thisMovie?.videos ?? {};
   const priorityLanguages = ["latino", "english"];
