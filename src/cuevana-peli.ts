@@ -114,7 +114,7 @@ async function tryFetchM3U8(lang: string, cyberlocker: string, videoUrl: string)
 
     const m3u8Url = await fetchM3U8Url2(embeddedVideoUrl);
     if (m3u8Url) {
-    //   console.log(`Se encontró URL m3u8 para ${lang} - ${cyberlocker}: ${m3u8Url}`);
+      console.log(`Se encontró URL m3u8 para ${lang} - ${cyberlocker}: ${m3u8Url}`);
       if (await verifyM3U8(m3u8Url)) {
         return m3u8Url;
       } else {
