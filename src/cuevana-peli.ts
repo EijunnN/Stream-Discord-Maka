@@ -327,6 +327,7 @@ async function tryFetchM3U8(lang: string, cyberlocker: string, videoUrl: string)
 
 export const getM3U8FromCuevana2 = async (url: string): Promise<string> => {
   const movie = await fetchDataMovie(url);
+  console.log(movie,"xd")
   if (!movie) {
     throw new Error("No se encontraron datos de video");
   }
