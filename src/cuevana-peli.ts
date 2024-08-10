@@ -146,6 +146,7 @@ export const getM3U8FromCuevana2 = async (url: string): Promise<string> => {
   for (const lang of priorityLanguages) {
     if (videos[lang] && videos[lang].length > 0) {
       for (const prio of priorityCyberlockers) {
+        console.log(`priorityCyberlockers ${prio}`);
         const video = videos[lang].find((v) => v.cyberlocker === prio);
         if (video) {
           const result = await tryFetchM3U8(lang, prio, video.result);
