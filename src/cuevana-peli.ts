@@ -415,6 +415,7 @@ import cheerio, { load } from "cheerio";
 import puppeteer from "puppeteer";
 import axios, { AxiosInstance } from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
+import UserAgent from 'user-agents';
 
 interface Video {
   cyberlocker: string;
@@ -440,24 +441,47 @@ const proxyConfig = {
   },
 };
 
-const axiosInstance: AxiosInstance = axios.create({
-  httpsAgent: new HttpsProxyAgent(
-    `http://${proxyConfig.auth.username}:${proxyConfig.auth.password}@${proxyConfig.host}:${proxyConfig.port}`
-  ),
-  headers: {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    Accept:
-      "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
-    Referer: "https://cuevana3.info/",
-  },
-});
+const createAxiosInstance = (): AxiosInstance => {
+  const userAgent = new UserAgent();
+  return axios.create({
+    httpsAgent: new HttpsProxyAgent(
+      `http://${proxyConfig.auth.username}:${proxyConfig.auth.password}@${proxyConfig.host}:${proxyConfig.port}`
+    ),
+    headers: {
+      'User-Agent': userAgent.toString(),
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5',
+      'Referer': 'https://cuevana3.info/',
+      'Origin': 'https://cuevana3.info',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'cross-site',
+      'Sec-Fetch-User': '?1',
+      'Upgrade-Insecure-Requests': '1',
+    },
+  });
+};
 
-export const fetchDataMovie = async (
-  url: string
-): Promise<PageProps | null> => {
-  try {
+async function retryWithExponentialBackoff(
+  fn: () => Promise<any>,
+  maxRetries: number = 5,
+  baseDelay: number = 1000
+): Promise<any> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      const delay = baseDelay * Math.pow(2, i);
+      console.log(`Retry attempt ${i + 1}. Waiting ${delay}ms before next attempt.`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
+export const fetchDataMovie = async (url: string): Promise<PageProps | null> => {
+  return retryWithExponentialBackoff(async () => {
+    const axiosInstance = createAxiosInstance();
     const response = await axiosInstance.get(url);
     const html = response.data;
     const $ = load(html);
@@ -471,14 +495,12 @@ export const fetchDataMovie = async (
       }
     }
     throw new Error("No se encontraron datos de __NEXT_DATA__");
-  } catch (error) {
-    console.error(`Error fetching data from ${url}:`, (error as Error).message);
-    return null;
-  }
+  });
 };
 
 export const fetchVideoUrl2 = async (url: string): Promise<string | null> => {
-  try {
+  return retryWithExponentialBackoff(async () => {
+    const axiosInstance = createAxiosInstance();
     const response = await axiosInstance.get(url);
     const html = response.data;
     const $ = load(html);
@@ -488,13 +510,7 @@ export const fetchVideoUrl2 = async (url: string): Promise<string | null> => {
     const scriptContent = script.html();
     const urlMatch = scriptContent?.match(/var url = '(.+?)'/) ?? null;
     return urlMatch ? urlMatch[1] : null;
-  } catch (error) {
-    console.error(
-      `Error fetching video URL from ${url}:`,
-      (error as Error).message
-    );
-    return null;
-  }
+  });
 };
 
 export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
@@ -522,6 +538,19 @@ export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
   });
 
   try {
+    const userAgent = new UserAgent();
+    await page.setUserAgent(userAgent.toString());
+    await page.setExtraHTTPHeaders({
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5',
+      'Referer': 'https://cuevana3.info/',
+      'Origin': 'https://cuevana3.info',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'cross-site',
+      'Sec-Fetch-User': '?1',
+      'Upgrade-Insecure-Requests': '1',
+    });
     await page.goto(url, { waitUntil: "networkidle0"});
   } catch (error) {
     console.error(`Error navigating to ${url}:`, (error as Error).message);
@@ -533,20 +562,14 @@ export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
 };
 
 async function verifyM3U8(url: string): Promise<boolean> {
-  try {
+  return retryWithExponentialBackoff(async () => {
+    const axiosInstance = createAxiosInstance();
     const response = await axiosInstance.get(url, {
-      headers: {
-        Referer: "https://cuevana3.info/",
-        Origin: "https://cuevana3.info",
-      },
+      responseType: 'text',
     });
     const content = response.data;
-
     return content.trim().startsWith("#EXTM3U");
-  } catch (error) {
-    console.error("Error fetching m3u8 content:", error);
-    return false;
-  }
+  });
 }
 
 async function tryFetchM3U8(
@@ -559,17 +582,13 @@ async function tryFetchM3U8(
 
     const embeddedVideoUrl = await fetchVideoUrl2(videoUrl);
     if (!embeddedVideoUrl) {
-      console.log(
-        `No se encontró URL de video embebido para ${lang} - ${cyberlocker}`
-      );
+      console.log(`No se encontró URL de video embebido para ${lang} - ${cyberlocker}`);
       return null;
     }
 
     const m3u8Url = await fetchM3U8Url2(embeddedVideoUrl);
     if (m3u8Url) {
-      console.log(
-        `Se encontró URL m3u8 para ${lang} - ${cyberlocker}: ${m3u8Url}`
-      );
+      console.log(`Se encontró URL m3u8 para ${lang} - ${cyberlocker}: ${m3u8Url}`);
       if (await verifyM3U8(m3u8Url)) {
         return m3u8Url;
       } else {
@@ -580,10 +599,7 @@ async function tryFetchM3U8(
     }
     return null;
   } catch (error) {
-    console.error(
-      `Error procesando ${lang} - ${cyberlocker}:`,
-      (error as Error).message
-    );
+    console.error(`Error procesando ${lang} - ${cyberlocker}:`, (error as Error).message);
     return null;
   }
 }
@@ -617,11 +633,7 @@ export const getM3U8FromCuevana2 = async (url: string): Promise<string> => {
     if (videos[lang] && videos[lang].length > 0) {
       for (const video of videos[lang]) {
         if (!priorityCyberlockers.includes(video.cyberlocker)) {
-          const result = await tryFetchM3U8(
-            lang,
-            video.cyberlocker,
-            video.result
-          );
+          const result = await tryFetchM3U8(lang, video.cyberlocker, video.result);
           if (result) return result;
         }
       }
@@ -632,17 +644,11 @@ export const getM3U8FromCuevana2 = async (url: string): Promise<string> => {
   for (const lang in videos) {
     if (!priorityLanguages.includes(lang) && videos[lang].length > 0) {
       for (const video of videos[lang]) {
-        const result = await tryFetchM3U8(
-          lang,
-          video.cyberlocker,
-          video.result
-        );
+        const result = await tryFetchM3U8(lang, video.cyberlocker, video.result);
         if (result) return result;
       }
     }
   }
 
-  throw new Error(
-    "No se encontró URL m3u8 válida en ninguna fuente disponible"
-  );
+  throw new Error("No se encontró URL m3u8 válida en ninguna fuente disponible");
 };
