@@ -187,6 +187,7 @@
 import cheerio, { load } from "cheerio";
 import puppeteer from "puppeteer";
 import axios from "axios";
+import { HttpsProxyAgent } from "https-proxy-agent";
 
 interface Video {
   cyberlocker: string;
@@ -203,12 +204,27 @@ interface PageProps {
   };
 }
 
+// Configuración del proxy
+const proxyConfig = {
+  host: 'gw.dataimpulse.com',
+  port: 823,
+  auth: {
+    username: '661e9d1fda89d1e94039',
+    password: 'ed8934de4aebeb2c'
+  }
+};
+
+// Crear una instancia de axios con el proxy configurado
+const axiosInstance = axios.create({
+  httpsAgent: new HttpsProxyAgent(`http://${proxyConfig.auth.username}:${proxyConfig.auth.password}@${proxyConfig.host}:${proxyConfig.port}`)
+});
+
 export const fetchDataMovie = async (
   url: string
 ): Promise<PageProps | null> => {
   try {
-    const response = await fetch(url);
-    const html = await response.text();
+    const response = await axiosInstance.get(url);
+    const html = response.data;
     const $ = load(html);
 
     const script = $("#__NEXT_DATA__");
@@ -228,8 +244,8 @@ export const fetchDataMovie = async (
 
 export const fetchVideoUrl2 = async (url: string): Promise<string | null> => {
   try {
-    const response = await fetch(url);
-    const html = await response.text();
+    const response = await axiosInstance.get(url);
+    const html = response.data;
     const $ = load(html);
     const script = $("script")
       .filter((i, el) => $(el).html()?.includes("var url =") ?? false)
@@ -249,9 +265,13 @@ export const fetchVideoUrl2 = async (url: string): Promise<string | null> => {
 export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
   const browser = await puppeteer.launch({ 
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: ['--no-sandbox', '--disable-setuid-sandbox', `--proxy-server=${proxyConfig.host}:${proxyConfig.port}`]
   });
   const page = await browser.newPage();
+  await page.authenticate({
+    username: proxyConfig.auth.username,
+    password: proxyConfig.auth.password
+  });
   let m3u8Url: string | null = null;
 
   await page.setRequestInterception(true);
@@ -276,10 +296,10 @@ export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
 
 async function verifyM3U8(url: string): Promise<boolean> {
   try {
-    const response = await axios.get(url);
+    const response = await axiosInstance.get(url);
     const content = response.data;
 
-    if (!content.trim().startsWith('#EXTM3U') || !content.trim().includes('#EXT-X-STREAM-INF')) {
+    if (!content.trim().startsWith('#EXTM3U')) {
       return false;
     }
 
@@ -290,42 +310,13 @@ async function verifyM3U8(url: string): Promise<boolean> {
   }
 }
 
-async function fetchDirectFilemoonUrl(url: string): Promise<string | null> {
-  try {
-    const response = await axios.get(url);
-    const html = response.data;
-    const match = html.match(/var url = '(.+?)';/);
-    return match ? match[1] : null;
-  } catch (error) {
-    console.error(`Error obteniendo URL directa de Filemoon:`, (error as Error).message);
-    return null;
-  }
-}
-
 async function tryFetchM3U8(lang: string, cyberlocker: string, videoUrl: string): Promise<string | null> {
   try {
-    console.log(`Procesando ${lang} - ${cyberlocker}: ${videoUrl}`);
-
-    if (cyberlocker === "filemoon") {
-      console.log(`Detectado Filemoon, intentando obtener URL directamente`);
-      const directUrl = await fetchDirectFilemoonUrl(videoUrl);
-      if (directUrl) {
-        console.log(`URL directa de Filemoon obtenida: ${directUrl}`);
-        if (await verifyM3U8(directUrl)) {
-          return directUrl;
-        } else {
-          console.log(`URL directa de Filemoon no es un m3u8 válido`);
-        }
-      }
-    }
-
     const embeddedVideoUrl = await fetchVideoUrl2(videoUrl);
     if (!embeddedVideoUrl) {
       console.log(`No se encontró URL de video embebido para ${lang} - ${cyberlocker}`);
       return null;
     }
-
-    console.log(`URL embebida encontrada: ${embeddedVideoUrl}`);
 
     const m3u8Url = await fetchM3U8Url2(embeddedVideoUrl);
     if (m3u8Url) {
@@ -350,8 +341,6 @@ export const getM3U8FromCuevana2 = async (url: string): Promise<string> => {
   if (!movie) {
     throw new Error("No se encontraron datos de video");
   }
-
-  console.log("Datos de video encontrados:", JSON.stringify(movie.thisMovie?.videos, null, 2));
 
   const videos = movie.thisMovie?.videos ?? {};
   const priorityLanguages = ["latino", "english"];
