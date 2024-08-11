@@ -412,14 +412,9 @@
 // };
 
 import cheerio, { load } from "cheerio";
-import puppeteer from "puppeteer-extra";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import { Browser, Page } from "puppeteer";
+import puppeteer from "puppeteer";
 import axios, { AxiosInstance } from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
-import UserAgent from "user-agents";
-
-puppeteer.use(StealthPlugin());
 
 interface Video {
   cyberlocker: string;
@@ -445,49 +440,65 @@ const proxyConfig = {
   },
 };
 
-const createAxiosInstance = (): AxiosInstance => {
-  const userAgent = new UserAgent();
-  return axios.create({
-    httpsAgent: new HttpsProxyAgent(
-      `http://${proxyConfig.auth.username}:${proxyConfig.auth.password}@${proxyConfig.host}:${proxyConfig.port}`
-    ),
-    headers: {
-      "User-Agent": userAgent.toString(),
-      Accept:
-        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.5",
-      Referer: "https://cuevana3.info/",
-      Origin: "https://cuevana3.info",
-      "Sec-Fetch-Dest": "document",
-      "Sec-Fetch-Mode": "navigate",
-      "Sec-Fetch-Site": "cross-site",
-      "Sec-Fetch-User": "?1",
-      "Upgrade-Insecure-Requests": "1",
-    },
-  });
+const axiosInstance: AxiosInstance = axios.create({
+  httpsAgent: new HttpsProxyAgent(
+    `http://${proxyConfig.auth.username}:${proxyConfig.auth.password}@${proxyConfig.host}:${proxyConfig.port}`
+  ),
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    Accept:
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    Referer: "https://cuevana3.info/",
+  },
+});
+
+export const fetchDataMovie = async (
+  url: string
+): Promise<PageProps | null> => {
+  try {
+    const response = await axiosInstance.get(url);
+    const html = response.data;
+    const $ = load(html);
+
+    const script = $("#__NEXT_DATA__");
+    if (script.length) {
+      const scriptContent = script.html();
+      if (scriptContent) {
+        const data = JSON.parse(scriptContent);
+        return data.props.pageProps;
+      }
+    }
+    throw new Error("No se encontraron datos de __NEXT_DATA__");
+  } catch (error) {
+    console.error(`Error fetching data from ${url}:`, (error as Error).message);
+    return null;
+  }
 };
 
-async function retryWithExponentialBackoff(
-  fn: () => Promise<any>,
-  maxRetries: number = 5,
-  baseDelay: number = 1000
-): Promise<any> {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (i === maxRetries - 1) throw error;
-      const delay = baseDelay * Math.pow(2, i);
-      console.log(
-        `Retry attempt ${i + 1}. Waiting ${delay}ms before next attempt.`
-      );
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
+export const fetchVideoUrl2 = async (url: string): Promise<string | null> => {
+  try {
+    const response = await axiosInstance.get(url);
+    const html = response.data;
+    const $ = load(html);
+    const script = $("script")
+      .filter((i, el) => $(el).html()?.includes("var url =") ?? false)
+      .first();
+    const scriptContent = script.html();
+    const urlMatch = scriptContent?.match(/var url = '(.+?)'/) ?? null;
+    return urlMatch ? urlMatch[1] : null;
+  } catch (error) {
+    console.error(
+      `Error fetching video URL from ${url}:`,
+      (error as Error).message
+    );
+    return null;
   }
-}
+};
 
-async function setupBrowser(): Promise<Browser> {
-  return await puppeteer.launch({
+export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
+  const browser = await puppeteer.launch({
     headless: true,
     args: [
       "--no-sandbox",
@@ -495,82 +506,11 @@ async function setupBrowser(): Promise<Browser> {
       `--proxy-server=${proxyConfig.host}:${proxyConfig.port}`,
     ],
   });
-}
-
-async function setupPage(browser: Browser): Promise<Page> {
   const page = await browser.newPage();
   await page.authenticate({
     username: proxyConfig.auth.username,
     password: proxyConfig.auth.password,
   });
-  const userAgent = new UserAgent();
-  await page.setUserAgent(userAgent.toString());
-  await page.setExtraHTTPHeaders({
-    Accept:
-      "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
-    Referer: "https://cuevana3.info/",
-    Origin: "https://cuevana3.info",
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "cross-site",
-    "Sec-Fetch-User": "?1",
-    "Upgrade-Insecure-Requests": "1",
-  });
-  return page;
-}
-
-export const fetchDataMovie = async (
-  url: string
-): Promise<PageProps | null> => {
-  return retryWithExponentialBackoff(async () => {
-    const browser = await setupBrowser();
-    const page = await setupPage(browser);
-
-    try {
-      await page.goto(url, { waitUntil: "networkidle0", timeout: 60000 });
-      const content = await page.content();
-      const $ = load(content);
-
-      const script = $("#__NEXT_DATA__");
-      if (script.length) {
-        const scriptContent = script.html();
-        if (scriptContent) {
-          const data = JSON.parse(scriptContent);
-          return data.props.pageProps;
-        }
-      }
-      throw new Error("No se encontraron datos de __NEXT_DATA__");
-    } finally {
-      await browser.close();
-    }
-  });
-};
-
-export const fetchVideoUrl2 = async (url: string): Promise<string | null> => {
-  return retryWithExponentialBackoff(async () => {
-    const browser = await setupBrowser();
-    const page = await setupPage(browser);
-
-    try {
-      await page.goto(url, { waitUntil: "networkidle0", timeout: 60000 });
-      const content = await page.content();
-      const $ = load(content);
-      const script = $("script")
-        .filter((i, el) => $(el).html()?.includes("var url =") ?? false)
-        .first();
-      const scriptContent = script.html();
-      const urlMatch = scriptContent?.match(/var url = '(.+?)'/) ?? null;
-      return urlMatch ? urlMatch[1] : null;
-    } finally {
-      await browser.close();
-    }
-  });
-};
-
-export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
-  const browser = await setupBrowser();
-  const page = await setupPage(browser);
   let m3u8Url: string | null = null;
 
   await page.setRequestInterception(true);
@@ -582,7 +522,7 @@ export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
   });
 
   try {
-    await page.goto(url, { waitUntil: "networkidle0" });
+    await page.goto(url, { waitUntil: "networkidle2" });
   } catch (error) {
     console.error(`Error navigating to ${url}:`, (error as Error).message);
   } finally {
@@ -593,14 +533,20 @@ export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
 };
 
 async function verifyM3U8(url: string): Promise<boolean> {
-  return retryWithExponentialBackoff(async () => {
-    const axiosInstance = createAxiosInstance();
+  try {
     const response = await axiosInstance.get(url, {
-      responseType: "text",
+      headers: {
+        Referer: "https://cuevana3.info/",
+        Origin: "https://cuevana3.info",
+      },
     });
     const content = response.data;
+
     return content.trim().startsWith("#EXTM3U");
-  });
+  } catch (error) {
+    console.error("Error fetching m3u8 content:", error);
+    return false;
+  }
 }
 
 async function tryFetchM3U8(
