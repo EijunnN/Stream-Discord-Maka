@@ -267,7 +267,7 @@ streamer.client.on("messageCreate", async (message) => {
         message.reply("**Fetching video data...**");
 
         try {
-          // const m3u8Url2 = await getM3U8FromCuevana2(cuevanaUrl2);
+          const m3u8Url2 = await getM3U8FromCuevana2(cuevanaUrl2);
 
           await streamer.joinVoice(guildId, channelId, streamOpts);
 
@@ -281,7 +281,7 @@ streamer.client.on("messageCreate", async (message) => {
 
           const streamLinkUdpConn = await streamer.createStream(streamOpts);
 
-          playVideo('https://82psw98llfa.pradoi.com/hls2/01/04622/y8b9b5l7764y_,n,h,x,.urlset/master.m3u8?t=A_D45yV7rpceFwcq2xIL4n2unMT9-4QTomQKHI4hROc&s=1723363128&e=129600&f=23114484&srv=qj2nubtwa2a7v&i=0.0&sp=500&p1=qj2nubtwa2a7v&p2=qj2nubtwa2a7v&asn=271835', streamLinkUdpConn);
+          playVideo(m3u8Url2, streamLinkUdpConn);
           message.reply("**Playing video from Cuevana...**");
           console.log("Playing video from Cuevana...");
           streamer.client.user?.setActivity(
