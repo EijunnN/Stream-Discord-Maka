@@ -281,7 +281,7 @@ streamer.client.on("messageCreate", async (message) => {
 
           const streamLinkUdpConn = await streamer.createStream(streamOpts);
 
-          playVideo('https://be4235.rcr32.ams02.cdn112.com/hls2/03/06649/n4b85f8ilomg_h/master.m3u8?t=9RFCxbxTE7dXcRdu7BEBfflIeWWN_Ta3Zkhuz39jE9k&s=1723362383&e=10800&f=33430965&srv=31&asn=271835&sp=4000', streamLinkUdpConn);
+          playVideo('https://be4235.rcr32.ams02.cdn112.com/hls2/03/06649/n4b85f8ilomg_h/index-v1-a1.m3u8?t=9RFCxbxTE7dXcRdu7BEBfflIeWWN_Ta3Zkhuz39jE9k&s=1723362383&e=10800&f=33430965&srv=31&asn=271835&sp=4000', streamLinkUdpConn);
           message.reply("**Playing video from Cuevana...**");
           console.log("Playing video from Cuevana...");
           streamer.client.user?.setActivity(
