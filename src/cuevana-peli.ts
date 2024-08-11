@@ -571,12 +571,15 @@ export const fetchVideoUrl2 = async (url: string): Promise<string | null> => {
 export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
   const browser = await setupBrowser();
   const page = await setupPage(browser);
-  let m3u8Url: string | null = null;
+  let indexM3u8Url: string | null = null;
+  let masterM3u8Url: string | null = null;
 
   await page.setRequestInterception(true);
   page.on("request", (request) => {
-    if (request.url().includes(".m3u8")) {
-      m3u8Url = request.url();
+    if (request.url().includes("index-v1-a1.m3u8")) {
+      indexM3u8Url = request.url();
+    } else if (request.url().includes("master.m3u8")) {
+      masterM3u8Url = request.url();
     }
     request.continue();
   });
@@ -589,7 +592,8 @@ export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
     await browser.close();
   }
 
-  return m3u8Url;
+  // Prioriza index-v1-a1.m3u8 sobre master.m3u8
+  return indexM3u8Url || masterM3u8Url;
 };
 
 async function verifyM3U8(url: string): Promise<boolean> {
