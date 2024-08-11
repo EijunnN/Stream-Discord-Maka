@@ -186,6 +186,7 @@
 // import puppeteer from "puppeteer";
 // import axios from "axios";
 // import { HttpsProxyAgent } from "https-proxy-agent";
+// import { User } from "discord.js-selfbot-v13";
 
 // interface Video {
 //   cyberlocker: string;
@@ -204,17 +205,19 @@
 
 // // Configuración del proxy
 // const proxyConfig = {
-//   host: 'gw.dataimpulse.com',
+//   host: "gw.dataimpulse.com",
 //   port: 823,
 //   auth: {
-//     username: '661e9d1fda89d1e94039',
-//     password: 'ed8934de4aebeb2c'
-//   }
+//     username: "661e9d1fda89d1e94039",
+//     password: "ed8934de4aebeb2c",
+//   },
 // };
 
 // // Crear una instancia de axios con el proxy configurado
 // const axiosInstance = axios.create({
-//   httpsAgent: new HttpsProxyAgent(`http://${proxyConfig.auth.username}:${proxyConfig.auth.password}@${proxyConfig.host}:${proxyConfig.port}`)
+//   httpsAgent: new HttpsProxyAgent(
+//     `http://${proxyConfig.auth.username}:${proxyConfig.auth.password}@${proxyConfig.host}:${proxyConfig.port}`
+//   ),
 // });
 
 // export const fetchDataMovie = async (
@@ -263,12 +266,16 @@
 // export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
 //   const browser = await puppeteer.launch({
 //     headless: true,
-//     args: ['--no-sandbox', '--disable-setuid-sandbox', `--proxy-server=${proxyConfig.host}:${proxyConfig.port}`]
+//     args: [
+//       "--no-sandbox",
+//       "--disable-setuid-sandbox",
+//       `--proxy-server=${proxyConfig.host}:${proxyConfig.port}`,
+//     ],
 //   });
 //   const page = await browser.newPage();
 //   await page.authenticate({
 //     username: proxyConfig.auth.username,
-//     password: proxyConfig.auth.password
+//     password: proxyConfig.auth.password,
 //   });
 //   let m3u8Url: string | null = null;
 
@@ -297,28 +304,36 @@
 //     const response = await axiosInstance.get(url);
 //     const content = response.data;
 
-//     if (!content.trim().startsWith('#EXTM3U')) {
+//     if (!content.trim().startsWith("#EXTM3U")) {
 //       return false;
 //     }
 
 //     return true;
 //   } catch (error) {
-//     console.error('Error fetching m3u8 content:', error);
+//     console.error("Error fetching m3u8 content:", error);
 //     return false;
 //   }
 // }
 
-// async function tryFetchM3U8(lang: string, cyberlocker: string, videoUrl: string): Promise<string | null> {
+// async function tryFetchM3U8(
+//   lang: string,
+//   cyberlocker: string,
+//   videoUrl: string
+// ): Promise<string | null> {
 //   try {
 //     const embeddedVideoUrl = await fetchVideoUrl2(videoUrl);
 //     if (!embeddedVideoUrl) {
-//       console.log(`No se encontró URL de video embebido para ${lang} - ${cyberlocker}`);
+//       console.log(
+//         `No se encontró URL de video embebido para ${lang} - ${cyberlocker}`
+//       );
 //       return null;
 //     }
 
 //     const m3u8Url = await fetchM3U8Url2(embeddedVideoUrl);
 //     if (m3u8Url) {
-//       console.log(`Se encontró URL m3u8 para ${lang} - ${cyberlocker}: ${m3u8Url}`);
+//       console.log(
+//         `Se encontró URL m3u8 para ${lang} - ${cyberlocker}: ${m3u8Url}`
+//       );
 //       if (await verifyM3U8(m3u8Url)) {
 //         return m3u8Url;
 //       } else {
@@ -329,7 +344,10 @@
 //     }
 //     return null;
 //   } catch (error) {
-//     console.error(`Error procesando ${lang} - ${cyberlocker}:`, (error as Error).message);
+//     console.error(
+//       `Error procesando ${lang} - ${cyberlocker}:`,
+//       (error as Error).message
+//     );
 //     return null;
 //   }
 // }
@@ -363,7 +381,11 @@
 //     if (videos[lang] && videos[lang].length > 0) {
 //       for (const video of videos[lang]) {
 //         if (!priorityCyberlockers.includes(video.cyberlocker)) {
-//           const result = await tryFetchM3U8(lang, video.cyberlocker, video.result);
+//           const result = await tryFetchM3U8(
+//             lang,
+//             video.cyberlocker,
+//             video.result
+//           );
 //           if (result) return result;
 //         }
 //       }
@@ -374,17 +396,24 @@
 //   for (const lang in videos) {
 //     if (!priorityLanguages.includes(lang) && videos[lang].length > 0) {
 //       for (const video of videos[lang]) {
-//         const result = await tryFetchM3U8(lang, video.cyberlocker, video.result);
+//         const result = await tryFetchM3U8(
+//           lang,
+//           video.cyberlocker,
+//           video.result
+//         );
 //         if (result) return result;
 //       }
 //     }
 //   }
 
-//   throw new Error("No se encontró URL m3u8 válida en ninguna fuente disponible");
+//   throw new Error(
+//     "No se encontró URL m3u8 válida en ninguna fuente disponible"
+//   );
 // };
 
 import cheerio, { load } from "cheerio";
-import axios, { AxiosResponse, AxiosResponseHeaders } from "axios";
+import puppeteer from "puppeteer";
+import axios, { AxiosInstance } from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
 
 interface Video {
@@ -411,7 +440,7 @@ const proxyConfig = {
   },
 };
 
-const axiosInstance = axios.create({
+const axiosInstance: AxiosInstance = axios.create({
   httpsAgent: new HttpsProxyAgent(
     `http://${proxyConfig.auth.username}:${proxyConfig.auth.password}@${proxyConfig.host}:${proxyConfig.port}`
   ),
@@ -423,7 +452,6 @@ const axiosInstance = axios.create({
     "Accept-Language": "en-US,en;q=0.5",
     Referer: "https://cuevana3.info/",
   },
-  maxRedirects: 5,
 });
 
 export const fetchDataMovie = async (
@@ -470,60 +498,53 @@ export const fetchVideoUrl2 = async (url: string): Promise<string | null> => {
 };
 
 export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
-  try {
-    let finalUrl: string | null = null;
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      `--proxy-server=${proxyConfig.host}:${proxyConfig.port}`,
+    ],
+  });
+  const page = await browser.newPage();
+  await page.authenticate({
+    username: proxyConfig.auth.username,
+    password: proxyConfig.auth.password,
+  });
+  let m3u8Url: string | null = null;
 
-    const interceptor = axiosInstance.interceptors.response.use(
-      (response: AxiosResponse) => {
-        if (typeof response.config.url === "string") {
-          finalUrl = response.config.url;
-        }
-        return response;
-      },
-      (error) => {
-        if (
-          error.response?.status === 302 &&
-          typeof error.response.headers.location === "string"
-        ) {
-          finalUrl = error.response.headers.location;
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    await axiosInstance.get(url, {
-      maxRedirects: 5,
-      validateStatus: (status: number) => status >= 200 && status < 303,
-    });
-
-    axiosInstance.interceptors.response.eject(interceptor);
-
-    if (typeof finalUrl === "string" && finalUrl.includes(".m3u8")) {
-      console.log(`URL m3u8 encontrada: ${finalUrl}`);
-      return finalUrl;
-    } else {
-      console.log("No se encontró URL m3u8 en las redirecciones");
-      return null;
+  await page.setRequestInterception(true);
+  page.on("request", (request) => {
+    if (request.url().includes(".m3u8")) {
+      m3u8Url = request.url();
     }
+    request.continue();
+  });
+
+  try {
+    await page.goto(url, { waitUntil: "networkidle0"});
   } catch (error) {
-    console.error(
-      `Error fetching m3u8 URL from ${url}:`,
-      (error as Error).message
-    );
-    return null;
+    console.error(`Error navigating to ${url}:`, (error as Error).message);
+  } finally {
+    await browser.close();
   }
+
+  return m3u8Url;
 };
 
 async function verifyM3U8(url: string): Promise<boolean> {
   try {
-    const response = await axiosInstance.get<string>(url, {
-      responseType: 'text'
+    const response = await axiosInstance.get(url, {
+      headers: {
+        Referer: "https://cuevana3.info/",
+        Origin: "https://cuevana3.info",
+      },
     });
     const content = response.data;
 
-    return content.trim().startsWith('#EXTM3U');
+    return content.trim().startsWith("#EXTM3U");
   } catch (error) {
-    console.error('Error fetching m3u8 content:', error);
+    console.error("Error fetching m3u8 content:", error);
     return false;
   }
 }
