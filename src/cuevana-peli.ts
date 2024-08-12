@@ -131,7 +131,7 @@ async function tryFetchM3U8(
       );
       return null;
     }
-
+    console.log(embeddedVideoUrl,"xd");
     const m3u8Url = await fetchM3U8Url2(embeddedVideoUrl);
     if (m3u8Url) {
       console.log(
