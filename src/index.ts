@@ -161,7 +161,7 @@ streamer.client.on("messageCreate", async (message) => {
         );
         break;
       case "playlink":
-        console.log("XD")
+        console.log("XD");
         if (streamStatus.joined) {
           message.reply("**Already joined**");
           return;
@@ -209,7 +209,7 @@ streamer.client.on("messageCreate", async (message) => {
 
         break;
       case "cuevanaserie":
-        console.log("cuevana")
+        console.log("cuevana");
         if (streamStatus.joined) {
           message.reply("**Already joined**");
           return;
@@ -250,27 +250,63 @@ streamer.client.on("messageCreate", async (message) => {
           message.reply(`**An error occurred: ${error.message}**`);
         }
         break;
+      // case "cuevanapeli":
+      //   console.log("cuevana")
+      //   if (streamStatus.joined) {
+      //     message.reply("**Already joined**");
+      //     return;
+      //   }
+
+      //   let cuevanaUrl2 = args.shift() || "";
+
+      //   if (!cuevanaUrl2) {
+      //     message.reply("**Please provide a Cuevana URL.**");
+      //     return;
+      //   }
+
+      //   message.reply("**Fetching video data...**");
+
+      //   try {
+      //     const m3u8Url2 = await getM3U8FromCuevana2(cuevanaUrl2);
+
+      //     await streamer.joinVoice(guildId, channelId, streamOpts);
+
+      //     streamStatus.joined = true;
+      //     streamStatus.playing = true;
+      //     streamStatus.channelInfo = {
+      //       guildId: guildId,
+      //       channelId: channelId,
+      //       cmdChannelId: message.channel.id,
+      //     };
+
+      //     const streamLinkUdpConn = await streamer.createStream(streamOpts);
+
+      //     playVideo(m3u8Url2, streamLinkUdpConn);
+      //     message.reply("**Playing video from Cuevana...**");
+      //     console.log("Playing video from Cuevana...");
+      //     streamer.client.user?.setActivity(
+      //       status_watch("Cuevana Video") as ActivityOptions
+      //     );
+      //   } catch (error: any) {
+      //     console.error("Error processing Cuevana URL:", error);
+      //     message.reply(`**An error occurred: ${error.message}**`);
+      //   }
+      //   break;
       case "cuevanapeli":
-        console.log("cuevana")
+        console.log("cuevana");
         if (streamStatus.joined) {
           message.reply("**Already joined**");
           return;
         }
-
         let cuevanaUrl2 = args.shift() || "";
-
         if (!cuevanaUrl2) {
           message.reply("**Please provide a Cuevana URL.**");
           return;
         }
-
         message.reply("**Fetching video data...**");
-
         try {
           const m3u8Url2 = await getM3U8FromCuevana2(cuevanaUrl2);
-
           await streamer.joinVoice(guildId, channelId, streamOpts);
-
           streamStatus.joined = true;
           streamStatus.playing = true;
           streamStatus.channelInfo = {
@@ -278,9 +314,7 @@ streamer.client.on("messageCreate", async (message) => {
             channelId: channelId,
             cmdChannelId: message.channel.id,
           };
-
           const streamLinkUdpConn = await streamer.createStream(streamOpts);
-
           playVideo(m3u8Url2, streamLinkUdpConn);
           message.reply("**Playing video from Cuevana...**");
           console.log("Playing video from Cuevana...");
@@ -291,9 +325,9 @@ streamer.client.on("messageCreate", async (message) => {
           console.error("Error processing Cuevana URL:", error);
           message.reply(`**An error occurred: ${error.message}**`);
         }
-        break;  
-      case "jkanime": 
-        console.log("jkanime")
+        break;
+      case "jkanime":
+        console.log("jkanime");
         if (streamStatus.joined) {
           message.reply("**Already joined**");
           return;
@@ -647,8 +681,6 @@ async function getVideoUrl(videoUrl: string) {
   }
 }
 
-
-
 async function ytPlayTitle(title: string) {
   try {
     const r = await yts.search(title, { limit: 1 });
@@ -687,7 +719,6 @@ async function ytSearch(title: string): Promise<string[]> {
   } catch (error) {
     console.log("No videos found with the given title.");
     return [];
-    
   }
 }
 

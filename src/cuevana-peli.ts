@@ -3,6 +3,21 @@ import puppeteer from "puppeteer";
 import axios, { AxiosInstance } from "axios";
 import { HttpProxyAgent } from "http-proxy-agent";
 
+import { Movie, IMovie } from "./models/movie";
+import mongoose from "mongoose";
+
+const uri =
+  "mongodb+srv://avmezaa:owUf38RmphNeQq4T@cluster0.r8pdzmy.mongodb.net/prueba3?retryWrites=true&w=majority&appName=AtlasApp";
+
+mongoose
+  .connect(uri)
+  .then(() => {
+    console.log("Conectado a MongoDB");
+  })
+  .catch((error) => {
+    console.log("Error al conectar a MongoDB:", error);
+  });
+
 interface Video {
   cyberlocker: string;
   result: string;
@@ -131,7 +146,7 @@ async function tryFetchM3U8(
       );
       return null;
     }
-    console.log(embeddedVideoUrl,"xd");
+    console.log(embeddedVideoUrl, "xd");
     const m3u8Url = await fetchM3U8Url2(embeddedVideoUrl);
     if (m3u8Url) {
       console.log(
@@ -155,50 +170,124 @@ async function tryFetchM3U8(
   }
 }
 
-export const getM3U8FromCuevana2 = async (url: string): Promise<string> => {
-  const movie = await fetchDataMovie(url);
-  if (!movie) {
-    throw new Error("No se encontraron datos de video");
-  }
+// export const getM3U8FromCuevana2 = async (url: string): Promise<string> => {
+//   const movie = await fetchDataMovie(url);
+//   if (!movie) {
+//     throw new Error("No se encontraron datos de video");
+//   }
 
-  const videos = movie.thisMovie?.videos ?? {};
-  const priorityLanguages = ["latino", "english"];
+//   const videos = movie.thisMovie?.videos ?? {};
+//   const priorityLanguages = ["latino", "english"];
+//   const priorityCyberlockers = ["filemoon", "voesx", "streamwish"];
+
+//   // First, try priority languages with priority cyberlockers
+//   for (const lang of priorityLanguages) {
+//     if (videos[lang] && videos[lang].length > 0) {
+//       for (const prio of priorityCyberlockers) {
+//         console.log(`priorityCyberlockers ${prio}`);
+//         const video = videos[lang].find((v) => v.cyberlocker === prio);
+//         if (video) {
+//           const result = await tryFetchM3U8(lang, prio, video.result);
+//           if (result) return result;
+//         }
+//       }
+//     }
+//   }
+
+//   // If not found, try priority languages with non-priority cyberlockers
+//   for (const lang of priorityLanguages) {
+//     if (videos[lang] && videos[lang].length > 0) {
+//       for (const video of videos[lang]) {
+//         if (!priorityCyberlockers.includes(video.cyberlocker)) {
+//           const result = await tryFetchM3U8(
+//             lang,
+//             video.cyberlocker,
+//             video.result
+//           );
+//           if (result) return result;
+//         }
+//       }
+//     }
+//   }
+
+//   // If still not found, try other languages
+//   for (const lang in videos) {
+//     if (!priorityLanguages.includes(lang) && videos[lang].length > 0) {
+//       for (const video of videos[lang]) {
+//         const result = await tryFetchM3U8(
+//           lang,
+//           video.cyberlocker,
+//           video.result
+//         );
+//         if (result) return result;
+//       }
+//     }
+//   }
+
+//   throw new Error(
+//     "No se encontró URL m3u8 válida en ninguna fuente disponible"
+//   );
+// };
+
+export const getM3U8FromCuevana2 = async (url: string): Promise<string> => {
+  try {
+    const movie = await fetchMovieFromDatabase(url);
+    if (movie) {
+      const m3u8Url = await getM3U8FromMovie(movie);
+      if (m3u8Url) return m3u8Url;
+    }
+
+    // If movie not found in database or m3u8 not available, fetch and add to database
+    const pageProps = await fetchDataMovie(url);
+    if (!pageProps) throw new Error("No se encontraron datos de video");
+
+    const newMovie = await addMovieToDatabase(pageProps);
+    return await getM3U8FromMovie(newMovie);
+  } catch (error) {
+    console.error("Error in getM3U8FromCuevana2:", error);
+    throw error;
+  }
+};
+
+const fetchMovieFromDatabase = async (url: string): Promise<IMovie | null> => {
+  const slug = url.split("/").pop();
+  return await Movie.findOne({ "additional_data.thisMovie.url.slug": slug });
+};
+
+const addMovieToDatabase = async (pageProps: any): Promise<IMovie> => {
+  const movieData = {
+    tmdb_id: pageProps.thisMovie.TMDbId,
+    titles: pageProps.thisMovie.titles.name,
+    additional_data: {
+      thisMovie: pageProps.thisMovie,
+    },
+    video_urls: pageProps.thisMovie.videos.english.concat(
+      pageProps.thisMovie.videos.spanish,
+      pageProps.thisMovie.videos.latino
+    ),
+  };
+
+  const movie = new Movie(movieData);
+  await movie.save();
+  return movie;
+};
+
+const getM3U8FromMovie = async (movie: IMovie): Promise<string> => {
+  const priorityLanguages = ["latino", "english", "spanish"];
   const priorityCyberlockers = ["filemoon", "voesx", "streamwish"];
 
-  // First, try priority languages with priority cyberlockers
   for (const lang of priorityLanguages) {
-    if (videos[lang] && videos[lang].length > 0) {
+    const videos = movie.additional_data.thisMovie.videos[lang];
+    if (videos && videos.length > 0) {
       for (const prio of priorityCyberlockers) {
-        console.log(`priorityCyberlockers ${prio}`);
-        const video = videos[lang].find((v) => v.cyberlocker === prio);
+        const video = videos.find((v) => v.cyberlocker === prio);
         if (video) {
           const result = await tryFetchM3U8(lang, prio, video.result);
           if (result) return result;
         }
       }
-    }
-  }
-
-  // If not found, try priority languages with non-priority cyberlockers
-  for (const lang of priorityLanguages) {
-    if (videos[lang] && videos[lang].length > 0) {
-      for (const video of videos[lang]) {
-        if (!priorityCyberlockers.includes(video.cyberlocker)) {
-          const result = await tryFetchM3U8(
-            lang,
-            video.cyberlocker,
-            video.result
-          );
-          if (result) return result;
-        }
-      }
-    }
-  }
-
-  // If still not found, try other languages
-  for (const lang in videos) {
-    if (!priorityLanguages.includes(lang) && videos[lang].length > 0) {
-      for (const video of videos[lang]) {
+      // If priority cyberlockers not found, try others
+      for (const video of videos) {
         const result = await tryFetchM3U8(
           lang,
           video.cyberlocker,
