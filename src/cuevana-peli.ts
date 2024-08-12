@@ -31,28 +31,10 @@ export const fetchDataMovie = async (
   url: string
 ): Promise<PageProps | null> => {
   try {
-    // const response = await fetch(url);
-    const axiosInstance: AxiosInstance = axios.create({
-  httpsAgent: new HttpProxyAgent(
-    `http://${proxyConfig.auth.username}:${proxyConfig.auth.password}@${proxyConfig.host}:${proxyConfig.port}`
-  ),
-  headers: {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    "Accept": "*/*",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Origin": "https://cuevana3.info",
-    "Referer": "https://cuevana3.info/",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "cross-site",
-    "Connection": "keep-alive",
-  }
-});
-    // const html = await response.text();
-    const response = await axiosInstance.get(url);
-    const html = response.data;
-    // const $ = cheerio.load(html);
+    const response = await fetch(url);
+
+    const html = await response.text();
+
     const $ = load(html);
 
     const script = $("#__NEXT_DATA__");
