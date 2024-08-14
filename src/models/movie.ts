@@ -74,13 +74,13 @@ const GenreSchema = new Schema<IGenre>({
 });
 
 const MovieSchema = new Schema<IMovie>({
-  tmdb_id: String,
-  titles: String,
+  tmdb_id: {type : String, index : true},
+  titles: { type: String, index: true },
   additional_data: {
     blog: Boolean,
     blogPeliculas: Boolean,
     thisMovie: {
-      TMDbId: String,
+      TMDbId: { type: String, index: true },
       downloads: [VideoSchema],
       genres: [GenreSchema],
       images: {
@@ -101,7 +101,7 @@ const MovieSchema = new Schema<IMovie>({
         }
       },
       url: {
-        slug: String
+        slug: { type: String, index: true }
       },
       videos: {
         english: [VideoSchema],
@@ -113,5 +113,10 @@ const MovieSchema = new Schema<IMovie>({
   },
   video_urls: [VideoSchema]
 });
+
+
+// Índice compuesto para búsquedas frecuentes
+MovieSchema.index({ 'additional_data.thisMovie.url.slug': 1, tmdb_id: 1 });
+
 
 export const Movie = mongoose.model<IMovie>('Movie', MovieSchema);

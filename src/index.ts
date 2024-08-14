@@ -15,13 +15,14 @@ import {
 
 import config from "./config";
 import fs from "fs";
-import path from "path";
+import path, { resolve } from "path";
 import ytdl from "@distube/ytdl-core";
 import yts from "play-dl";
 import { getM3U8FromCuevana } from "./cuevana-serie";
 import { getM3U8FromCuevana2 } from "./cuevana-peli";
 import axios from "axios";
 import { getM3U8FromJkanime } from "./jkanime";
+
 
 const streamer = new Streamer(new Client());
 
@@ -428,6 +429,7 @@ streamer.client.on("messageCreate", async (message) => {
         }
 
         break;
+
       case "stop":
         if (!streamStatus.joined) {
           message.reply("**Already Stopped!**");
@@ -771,6 +773,26 @@ async function ffmpegScreenshot(video: string): Promise<string[]> {
 
     takeScreenshots(0);
   });
+}
+
+async function stopCurrentVideo(): Promise<void> {
+  if (streamStatus.joined) {
+    try {
+      command?.kill("SIGTERM"); // Usa SIGTERM en lugar de SIGKILL
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Espera 1 segundo
+
+      if (command?.killed === false) {
+        console.log("FFmpeg process did not exit, force killing...");
+        command?.kill("SIGKILL");
+      }
+
+      streamer.leaveVoice();
+      streamStatus.joined = false;
+      streamStatus.playing = false;
+    } catch (error) {
+      console.error("Error stopping current video:", error);
+    }
+  }
 }
 
 // run server if enabled in config
