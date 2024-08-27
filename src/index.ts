@@ -251,48 +251,6 @@ streamer.client.on("messageCreate", async (message) => {
           message.reply(`**An error occurred: ${error.message}**`);
         }
         break;
-      // case "cuevanapeli":
-      //   console.log("cuevana")
-      //   if (streamStatus.joined) {
-      //     message.reply("**Already joined**");
-      //     return;
-      //   }
-
-      //   let cuevanaUrl2 = args.shift() || "";
-
-      //   if (!cuevanaUrl2) {
-      //     message.reply("**Please provide a Cuevana URL.**");
-      //     return;
-      //   }
-
-      //   message.reply("**Fetching video data...**");
-
-      //   try {
-      //     const m3u8Url2 = await getM3U8FromCuevana2(cuevanaUrl2);
-
-      //     await streamer.joinVoice(guildId, channelId, streamOpts);
-
-      //     streamStatus.joined = true;
-      //     streamStatus.playing = true;
-      //     streamStatus.channelInfo = {
-      //       guildId: guildId,
-      //       channelId: channelId,
-      //       cmdChannelId: message.channel.id,
-      //     };
-
-      //     const streamLinkUdpConn = await streamer.createStream(streamOpts);
-
-      //     playVideo(m3u8Url2, streamLinkUdpConn);
-      //     message.reply("**Playing video from Cuevana...**");
-      //     console.log("Playing video from Cuevana...");
-      //     streamer.client.user?.setActivity(
-      //       status_watch("Cuevana Video") as ActivityOptions
-      //     );
-      //   } catch (error: any) {
-      //     console.error("Error processing Cuevana URL:", error);
-      //     message.reply(`**An error occurred: ${error.message}**`);
-      //   }
-      //   break;
       case "cuevanapeli":
         console.log("cuevana");
         if (streamStatus.joined) {
@@ -429,7 +387,6 @@ streamer.client.on("messageCreate", async (message) => {
         }
 
         break;
-
       case "stop":
         if (!streamStatus.joined) {
           message.reply("**Already Stopped!**");
@@ -775,25 +732,7 @@ async function ffmpegScreenshot(video: string): Promise<string[]> {
   });
 }
 
-async function stopCurrentVideo(): Promise<void> {
-  if (streamStatus.joined) {
-    try {
-      command?.kill("SIGTERM"); // Usa SIGTERM en lugar de SIGKILL
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Espera 1 segundo
 
-      if (command?.killed === false) {
-        console.log("FFmpeg process did not exit, force killing...");
-        command?.kill("SIGKILL");
-      }
-
-      streamer.leaveVoice();
-      streamStatus.joined = false;
-      streamStatus.playing = false;
-    } catch (error) {
-      console.error("Error stopping current video:", error);
-    }
-  }
-}
 
 // run server if enabled in config
 if (config.server_enabled) {
