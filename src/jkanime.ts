@@ -98,7 +98,7 @@ export const getM3U8FromJkanime = async (url: string): Promise<string> => {
 
   try {
     console.log(`Navigating to ${url}...`);
-    await page.goto(url, { waitUntil: "networkidle0", timeout: 60000 });
+    await page.goto(url, { waitUntil: "networkidle0" });
     console.log("Navigation complete");
     
     
@@ -108,7 +108,7 @@ export const getM3U8FromJkanime = async (url: string): Promise<string> => {
     console.log("Page content length:", pageContent.length);
 
     // Esperar un poco más por si hay cargas dinámicas adicionales
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    // await new Promise((resolve) => setTimeout(resolve, 5000));
   } catch (error) {
     console.error(`Error navigating to ${url}:`, (error as Error).message);
   } finally {

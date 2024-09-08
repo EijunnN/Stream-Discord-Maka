@@ -91,11 +91,45 @@ export const fetchVideoUrl2 = async (url: string): Promise<string | null> => {
 };
 
 export const fetchM3U8Url2 = async (url: string): Promise<string | null> => {
+  // const browser = await puppeteer.launch({
+  //   headless: true,
+  //   args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  // });
+  // const page = await browser.newPage();
+
+
+  // const browser = await puppeteer.launch({ headless: true, 
+  //   args: ['--no-sandbox', '--disable-setuid-sandbox']
+  //  });
+  // ADD TESTING
+  const proxyURL = 'gw.dataimpulse.com:823';
+  const username = '661e9d1fda89d1e94039';
+  const password = 'ed8934de4aebeb2c';
   const browser = await puppeteer.launch({
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-gpu',
+      '--disable-dev-shm-usage',
+      '--ignore-certificate-errors',
+      '--ignore-certificate-errors-spki-list',
+      `--proxy-server=${proxyURL}`,
+    ],
   });
   const page = await browser.newPage();
+
+  // ADD TESTING
+  await page.authenticate({
+    username,
+    password,
+  });
+
+  await page.setViewport({
+    width: 1920,
+    height: 1080,
+  });
+
   let m3u8Url: string | null = null;
 
   await page.setRequestInterception(true);

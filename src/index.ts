@@ -23,7 +23,6 @@ import { getM3U8FromCuevana2 } from "./cuevana-peli";
 import axios from "axios";
 import { getM3U8FromJkanime } from "./jkanime";
 
-
 const streamer = new Streamer(new Client());
 
 const streamOpts: StreamOptions = {
@@ -723,8 +722,8 @@ async function ffmpegScreenshot(video: string): Promise<string[]> {
           filename: `${video}-${i + 1}.jpg`,
           timestamps: [ts[i]],
           folder: config.previewCache,
-          // size: "640x480"
-          size: "1280x720",
+          size: "640x480"
+          // size: "1280x720",
         });
     };
 
@@ -732,10 +731,12 @@ async function ffmpegScreenshot(video: string): Promise<string[]> {
   });
 }
 
-
-
 // run server if enabled in config
 if (config.server_enabled) {
   // run server.js
   require("./server");
 }
+
+
+
+
