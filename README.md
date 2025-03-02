@@ -19,47 +19,6 @@ This is a Discord selfbot that allows streaming videos, and streams from YouTube
 
 ## 🛠️ Installation Steps:
 
-This project is [hosted on github](https://github.com/ysdragon/StreamBot).
-1. You can clone this project directly using this command:
-
-```
-git clone https://github.com/ysdragon/StreamBot
-```
-
-2. Use [bun](https://bun.sh) to install all the dependencies:
-```
-bun install 
-```
-
-3. Build the artifacts from source:
-```
-bun run build
-```
-
-4. Rename [.env.example](https://github.com/ysdragon/StreamBot/blob/main/.env.example) to .env
-
-## Usage
-Start the built artifacts:
-```
-bun run start
-```
-
-## Start with Docker Compose
-
-If you want to use Docker Compose, follow these steps:
-
-1. Create a new folder.
-2. Run the following command to download the `docker-compose.yml` file:
-   ```bash
-   wget https://raw.githubusercontent.com/ysdragon/StreamBot/main/docker-compose.yml
-   ```
-3. Edit the `docker-compose.yml` file and update the necessary information (e.g., TOKEN, PREFIX, GUILD_ID, etc.).
-4. Run the following command to start the Docker Compose setup:
-   ```bash
-   docker compose up -d
-   ```
-   
-## 🛠️ Commands
 
 ```
 play <video name> - Play a video from the local folder.
@@ -108,8 +67,31 @@ SERVER_PORT = "8080" # The port number the video server will listen on
 ```
 
 ## Get Token ?
-Check the [Get token wiki](https://github.com/ysdragon/StreamBot/wiki/Get-Discord-user-token)
-
+Get Token ?
+1. You should create a Discord user for the bot.
+2. Log in from your browser.
+3. Open browser devtools and run the code (Discord Console - [Ctrl + Shift + I]).
+```js
+window.webpackChunkdiscord_app.push([
+  [Math.random()],
+  {},
+  req => {
+    if (!req.c) return;
+    for (const m of Object.keys(req.c)
+      .map(x => req.c[x].exports)
+      .filter(x => x)) {
+      if (m.default && m.default.getToken !== undefined) {
+        return copy(m.default.getToken());
+      }
+      if (m.getToken !== undefined) {
+        return copy(m.getToken());
+      }
+    }
+  },
+]);
+console.log('%cWorked!', 'font-size: 50px');
+console.log(`%cYou now have your token in the clipboard!`, 'font-size: 16px');
+```
 ## Server
 
 An optional basic HTTP server can be enabled to manage the video library:
